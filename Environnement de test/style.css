@@ -1,0 +1,19 @@
+.password-error {
+  position: absolute;
+  background-color: red;
+  width: 100%;
+  height: 70px;
+  left: 0;
+  top: 0;
+  text-align: center;
+  color: white;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.password-error > i,
+.password-error > p {
+  padding: 0 2em;
+}
