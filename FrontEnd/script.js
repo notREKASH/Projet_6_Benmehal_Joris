@@ -327,13 +327,13 @@ function modalPicture() {
   labelCategory.innerHTML = "Catégorie";
 
   const selectCategory = document.createElement("select");
-  inputFile.required = true;
   selectCategory.name = "category";
   selectCategory.setAttribute("id", "category");
 
   const optionCategory = [
+    { id: 0, name: "Sélectionner une catégorie" },
     { id: 1, name: "Objets" },
-    { id: 2, name: "Appatements" },
+    { id: 2, name: "Appartements" },
     { id: 3, name: "Hôtels & Restaurants" },
   ];
 
@@ -341,6 +341,10 @@ function modalPicture() {
     const option = document.createElement("option");
     option.value = optionCategory[i].id;
     option.text = optionCategory[i].name;
+    if (optionCategory[i].id === 0) {
+      option.setAttribute("selected", "selected");
+      option.setAttribute("disabled", "disabled");
+    }
     selectCategory.appendChild(option);
   }
 
@@ -390,16 +394,15 @@ function modalPicture() {
   };
 
   inputFile.addEventListener("change", checkInput);
-  inputTitle.addEventListener("change", checkInput);
+  inputTitle.addEventListener("input", checkInput);
   selectCategory.addEventListener("change", checkInput);
 
   function checkInput() {
-    if (
-      submitBtn.disabled === true &&
-      inputFile.files.length > 0 &&
-      inputTitle.value.trim() !== "" &&
-      selectCategory.value.trim() !== ""
-    ) {
+    const isFileSelected = form.image.files.length > 0;
+    const isTitleFilled = form.title.value.trim() !== "";
+    const isCategorySelected = selectCategory.value !== "0";
+
+    if (isFileSelected && isTitleFilled && isCategorySelected) {
       submitBtn.disabled = false;
       submitBtn.style.backgroundColor = "#1d6154";
     } else {
