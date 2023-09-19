@@ -33,7 +33,10 @@ async function generateWorks(category) {
     }
     return worksFiltrees;
   } catch (error) {
-    console.error(error);
+    console.error(
+      "Un problème est survenu lors de l'opération de récupération avec fetch:",
+      error
+    );
   }
 }
 
@@ -70,40 +73,41 @@ crossClose.innerHTML = `<i class="fa-sharp fa-solid fa-xmark"></i>`;
 crossClose.classList.add("close-edition-mode");
 
 window.addEventListener("load", () => {
-  if (sessionStorage.getItem("isAdmin") === "true") {
-    if (sessionStorage.getItem("token") !== "") {
-      const editMode = document.createElement("div");
-      editMode.classList.add("edition-mode");
-      const layoutEditModeOnly = document.createElement("div");
-      layoutEditModeOnly.classList.add("layout-edit-mode");
-      const iconEdit = document.createElement("i");
-      iconEdit.innerHTML = `<i class="fa-sharp fa-regular fa-pen-to-square"></i>`;
-      const pEditMode = document.createElement("p");
-      pEditMode.innerHTML = "Mode édition";
-      const editModeButton = document.createElement("button");
-      editModeButton.innerHTML = "publier les changements";
-      editMode.style.display = "flex";
+  if (
+    sessionStorage.getItem("isAdmin") === "true" &&
+    sessionStorage.getItem("token") !== ""
+  ) {
+    const editMode = document.createElement("div");
+    editMode.classList.add("edition-mode");
+    const layoutEditModeOnly = document.createElement("div");
+    layoutEditModeOnly.classList.add("layout-edit-mode");
+    const iconEdit = document.createElement("i");
+    iconEdit.innerHTML = `<i class="fa-sharp fa-regular fa-pen-to-square"></i>`;
+    const pEditMode = document.createElement("p");
+    pEditMode.innerHTML = "Mode édition";
+    const editModeButton = document.createElement("button");
+    editModeButton.innerHTML = "publier les changements";
+    editMode.style.display = "flex";
 
-      const headerLogin = document.querySelector("#login");
-      headerLogin.textContent = "logout";
-      headerLogin.removeAttribute("href");
-      headerLogin.addEventListener("click", closeAdminMenu);
+    const headerLogin = document.querySelector("#login");
+    headerLogin.textContent = "logout";
+    headerLogin.removeAttribute("href");
+    headerLogin.addEventListener("click", closeAdminMenu);
 
-      layoutEditModeOnly.appendChild(iconEdit);
-      layoutEditModeOnly.appendChild(pEditMode);
-      editMode.appendChild(layoutEditModeOnly);
-      editMode.appendChild(editModeButton);
-      editMode.appendChild(crossClose);
-      document.body.appendChild(editMode);
+    layoutEditModeOnly.appendChild(iconEdit);
+    layoutEditModeOnly.appendChild(pEditMode);
+    editMode.appendChild(layoutEditModeOnly);
+    editMode.appendChild(editModeButton);
+    editMode.appendChild(crossClose);
+    document.body.appendChild(editMode);
 
-      const headerEditMode = document.querySelector(".header-edit-mode");
-      headerEditMode.style.paddingTop = "7em";
+    const headerEditMode = document.querySelector(".header-edit-mode");
+    headerEditMode.style.paddingTop = "7em";
 
-      const layoutEditMode = document.querySelectorAll(".layout-edit-mode");
-      for (let i = 0; i < layoutEditMode.length; i++) {
-        const layoutDisplay = layoutEditMode[i];
-        layoutDisplay.style.display = "flex";
-      }
+    const layoutEditMode = document.querySelectorAll(".layout-edit-mode");
+    for (let i = 0; i < layoutEditMode.length; i++) {
+      const layoutDisplay = layoutEditMode[i];
+      layoutDisplay.style.display = "flex";
     }
   }
 });
@@ -158,8 +162,7 @@ crossClose.addEventListener("click", closeAdminMenu);
 
 const layoutEditMode = document.querySelectorAll(".layout-edit-mode");
 layoutEditMode[1].addEventListener("click", async () => {
-  let category;
-  let worksFiltrees = await generateWorks(category);
+  let worksFiltrees = await generateWorks();
   galeryModal(worksFiltrees);
 });
 
@@ -205,13 +208,29 @@ function galeryModal(works) {
       modalEditButton.appendChild(deleteButton);
     });
 
-    deleteButton.addEventListener("click", () => {
+    deleteButton.addEventListener("click", async () => {
       const token = sessionStorage.getItem("token");
 
-      fetch("http://localhost:5678/api/works/" + work.id, {
-        method: "DELETE",
-        headers: { Authorization: "Bearer " + token }, // il faut un espace après "Bearer"
-      }).then((response) => response.json());
+      try {
+        const response = await fetch(
+          "http://localhost:5678/api/works/" + work.id,
+          {
+            method: "DELETE",
+            headers: { Authorization: "Bearer " + token },
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        generateWorks();
+        document.body.removeChild(modal);
+      } catch (error) {
+        console.error(
+          "Un problème est survenu lors de l'opération de récupération avec fetch:",
+          error
+        );
+      }
     });
   });
 
@@ -288,8 +307,8 @@ function modalPicture() {
 
   inputFile.addEventListener("change", function (event) {
     const selectedFile = event.target.files[0];
-    const maxSizeFile = 4194304;
-    if (selectedFile.size > maxSizeFile) {
+    const maxSizeFile = 4194304; // 4mo
+    if (selectedFile.size >= maxSizeFile) {
       alert("Le fichier est trop lourd, 4mo max");
       this.value = "";
     } else {
@@ -411,9 +430,8 @@ function modalPicture() {
     }
   }
 
-  submitBtn.addEventListener("click", function (event) {
+  submitBtn.addEventListener("click", async (event) => {
     event.preventDefault();
-
     const sendWorks = "http://localhost:5678/api/works";
     const token = sessionStorage.getItem("token");
 
@@ -422,15 +440,26 @@ function modalPicture() {
     formData.append("title", form.title.value);
     formData.append("category", selectCategory.value);
 
-    fetch(sendWorks, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-      body: formData,
-    })
-      .then((response) => response.json())
-      .catch((error) => console.log(error));
+    try {
+      const response = await fetch(sendWorks, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      generateWorks();
+      document.body.removeChild(modal);
+    } catch (error) {
+      console.error(
+        "Un problème est survenu lors de l'opération de récupération avec fetch:",
+        error
+      );
+    }
   });
 
   window.addEventListener("click", (event) => {
